@@ -1,0 +1,60 @@
+services:
+  # vpn:
+  #   image: kylemanna/openvpn
+  #   container_name: vpn_server
+  #   volumes:
+  #     - ./vpn-data:/etc/openvpn
+  #   ports:
+  #     - "1194:1194/udp"
+  #   networks:
+  #     - admin_network
+  #     - team1_network
+  #     - team2_network
+  #   cap_add:
+  #     - NET_ADMIN
+  #   restart: unless-stopped
+  #   command: ovpn_run
+
+  vpn:
+    build:
+      context: ./teams
+      dockerfile: Dockerfile
+    container_name: vpn
+    networks:
+      - team1_network
+      - admin_network
+    environment:
+      TEAM_ID: 9
+    restart: unless-stopped
+
+  service_controller:
+    build:
+      context: ./teams
+      dockerfile: Dockerfile
+    container_name: service_controller
+    depends_on:
+      - vpn
+    networks:
+      - admin_network
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  team1:
+    build:
+      context: ./teams
+      dockerfile: Dockerfile
+    container_name: team1
+    networks:
+      - team1_network
+      - admin_network
+    environment:
+      TEAM_ID: 1
+    restart: unless-stopped
+    
+
+networks:
+  admin_network:
+    driver: bridge
+  team1_network:
+    driver: bridge

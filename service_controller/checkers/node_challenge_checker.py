@@ -1,0 +1,1 @@
+# Take ip frm stdin and run healthcheck
