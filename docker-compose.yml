@@ -34,6 +34,9 @@ services:
     container_name: service_controller
     depends_on:
       - vpn
+    environment:
+      TICK_INTERVAL: 180
+      NUM_TEAMS: 2
     networks:
       - admin_network
     ports:
