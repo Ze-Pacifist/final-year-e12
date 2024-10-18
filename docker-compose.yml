@@ -1,44 +1,53 @@
 services:
-  # vpn:
-  #   image: kylemanna/openvpn
-  #   container_name: vpn_server
-  #   volumes:
-  #     - ./vpn-data:/etc/openvpn
-  #   ports:
-  #     - "1194:1194/udp"
-  #   networks:
-  #     - admin_network
-  #     - team1_network
-  #     - team2_network
-  #   cap_add:
-  #     - NET_ADMIN
-  #   restart: unless-stopped
-  #   command: ovpn_run
 
   vpn:
-    build:
-      context: ./teams
-      dockerfile: Dockerfile
+    image: lscr.io/linuxserver/wireguard:latest
     container_name: vpn
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/IST
+      - SERVERURL=vpn
+      - SERVERPORT=51820
+      - PEERS=${NO_OF_TEAMS}
+      - PEERDNS=auto
+      - INTERNAL_SUBNET=${SUBNET}
+      - ALLOWEDIPS=${ALLOWEDIPS}
+      - LOG_CONFS=true
+    volumes:
+      - ./vpn/config:/config
+      - /lib/modules:/lib/modules
+    ports:
+      - 51820:51820/udp
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
     networks:
       - team1_network
       - admin_network
-    environment:
-      TEAM_ID: 9
     restart: unless-stopped
 
   service_controller:
     build:
-      context: ./teams
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: service_controller/Dockerfile
     container_name: service_controller
     depends_on:
       - vpn
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
     environment:
       TICK_INTERVAL: 180
-      NUM_TEAMS: 2
+      NUM_TEAMS: ${NO_OF_TEAMS}
     networks:
       - admin_network
+    volumes:
+      - ./vpn/config/peer1/peer1.conf:/etc/wireguard/admin.conf
     ports:
       - "8080:8080"
     restart: unless-stopped
@@ -50,7 +59,6 @@ services:
     container_name: team1
     networks:
       - team1_network
-      - admin_network
     environment:
       TEAM_ID: 1
     restart: unless-stopped
