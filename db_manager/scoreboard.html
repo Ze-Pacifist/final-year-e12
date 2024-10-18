@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CTF Scoreboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .glow {
+            box-shadow: 0 0 15px rgba(255,255,255,0.5);
+        }
+    </style>
+</head>
+<body class="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-bold text-white mb-2 animate-fade-in">CTF Scoreboard</h1>
+            <p class="text-xl text-gray-200 animate-fade-in">Real-time standings</p>
+        </div>
+        <div class="bg-white rounded-lg shadow-xl overflow-hidden glow animate-fade-in">
+            <table id="scoreboard" class="w-full border-collapse">
+                <thead class="bg-gray-800 text-white">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border-b border-gray-300">Rank</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border-b border-gray-300">Team Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border-b border-gray-300">Services</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border-b border-gray-300">Total Score</th>
+                    </tr>
+                </thead>
+                <tbody id="scoreboardBody" class="bg-white divide-y divide-gray-200">
+                    <!-- Scoreboard data will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+        <div class="text-center mt-8 text-white animate-fade-in">
+            <p>Last updated: <span id="lastUpdated"></span></p>
+        </div>
+    </div>
+
+    <script>
+        function fetchScoreboard() {
+            fetch('http://127.0.0.1:5000/scoreboard')
+                .then(response => response.json())
+                .then(data => {
+                    const scoreboardBody = document.getElementById('scoreboardBody');
+                    scoreboardBody.innerHTML = '';
+
+                    data.sort((a, b) => b.total_score - a.total_score);
+
+                    data.forEach((team, index) => {
+                        const row = document.createElement('tr');
+                        row.className = 'hover:bg-gray-50 transition-colors duration-200 ease-in-out animate-fade-in';
+                        row.innerHTML = `
+                            <td class="px-6 py-4 whitespace-nowrap border-r border-gray-200">
+                                <div class="flex items-center justify-center">
+                                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-800 text-white flex items-center justify-center font-bold">
+                                        ${index + 1}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap border-r border-gray-200">
+                                <div class="text-sm font-medium text-gray-900">${team.name}</div>
+                            </td>
+                            <td class="px-6 py-4 border-r border-gray-200">
+                                <div class="flex flex-wrap gap-2 justify-start items-center">
+                                    ${Object.entries(team.services).map(([service, status]) => `
+                                        <div class="text-xs leading-5 font-semibold rounded-full ${getStatusColor(status)} px-2 py-1">
+                                            ${service} ${getStatusIcon(status)}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <div class="text-lg font-bold text-center">${team.total_score}</div>
+                            </td>
+                        `;
+                        scoreboardBody.appendChild(row);
+                    });
+
+                    updateLastUpdated();
+                })
+                .catch(error => console.error('Error fetching scoreboard:', error));
+        }
+
+        function getStatusColor(status) {
+            switch (status.toLowerCase()) {
+                case 'up':
+                    return 'bg-green-100 text-green-800';
+                case 'down':
+                    return 'bg-red-100 text-red-800';
+                case 'unknown':
+                    return 'bg-yellow-100 text-yellow-800';
+                default:
+                    return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        function getStatusIcon(status) {
+            switch (status.toLowerCase()) {
+                case 'up':
+                    return '<i class="fas fa-check-circle ml-1"></i>';
+                case 'down':
+                    return '<i class="fas fa-times-circle ml-1"></i>';
+                case 'unknown':
+                    return '<i class="fas fa-question-circle ml-1"></i>';
+                default:
+                    return '<i class="fas fa-info-circle ml-1"></i>';
+            }
+        }
+
+        function updateLastUpdated() {
+            const now = new Date();
+            document.getElementById('lastUpdated').textContent = now.toLocaleTimeString();
+        }
+
+        // Fetch scoreboard initially and then every 30 seconds
+        fetchScoreboard();
+        setInterval(fetchScoreboard, 30000);
+    </script>
+</body>
+</html>
