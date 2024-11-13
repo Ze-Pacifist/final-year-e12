@@ -24,3 +24,7 @@ pip-delete-this-directory.txt
 
 # VPN configs
 vpn/config
+
+# Auto generated files
+run.sh
+docker-compose.yml

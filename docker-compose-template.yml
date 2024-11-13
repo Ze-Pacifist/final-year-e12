@@ -1,4 +1,5 @@
 services:
+
   vpn:
     image: lscr.io/linuxserver/wireguard:latest
     container_name: vpn
@@ -11,10 +12,10 @@ services:
       - TZ=Etc/IST
       - SERVERURL=vpn
       - SERVERPORT=51820
-      - PEERS=2
+      - PEERS=${NO_OF_TEAMS}
       - PEERDNS=auto
-      - INTERNAL_SUBNET=10.13.13.0/24
-      - ALLOWEDIPS=10.13.13.0/24,172.30.0.0/16
+      - INTERNAL_SUBNET=${SUBNET}
+      - ALLOWEDIPS=${ALLOWEDIPS}
       - LOG_CONFS=true
     volumes:
       - ./vpn/config:/config
@@ -42,7 +43,7 @@ services:
       - net.ipv4.conf.all.src_valid_mark=1
     environment:
       TICK_INTERVAL: 180
-      NUM_TEAMS: 1
+      NUM_TEAMS: ${NO_OF_TEAMS}
     networks:
       - admin_network
     volumes:
@@ -61,15 +62,16 @@ services:
     environment:
       TEAM_ID: 1
     restart: unless-stopped
+    
 
 networks:
   admin_network:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.30.1.0/24
+        - subnet: 192.168.10.0/24
   team1_network:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.30.2.0/24
+        - subnet: 192.168.11.0/24
