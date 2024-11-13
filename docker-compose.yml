@@ -67,5 +67,11 @@ services:
 networks:
   admin_network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.10.0/24
   team1_network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.11.0/24

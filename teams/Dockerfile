@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /challenges
 COPY challenges/ /challenges/
 RUN cd /challenges/node_challenge && npm install
-RUN cd /challenges/python_challenge && apt install python3-flask -y
+RUN cd /challenges/python_challenge && apt-get update && apt-get install -y --fix-missing python3-flask
 
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 

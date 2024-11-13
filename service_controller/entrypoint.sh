@@ -11,6 +11,7 @@ if [[ -z "$default_route_ip" ]]; then
 fi
 
 configs=`find /etc/wireguard -type f -printf "%f\n"`
+ls /etc/wireguard
 if [[ -z "$configs" ]]; then
 	echo "No configuration file found in /etc/wireguard" >&2
 	exit 1
@@ -59,7 +60,7 @@ shutdown () {
 
 trap shutdown SIGTERM SIGINT SIGQUIT
 
-python service_controller.py &
+python -u service_controller.py &
 
 sleep infinity &
 wait $!

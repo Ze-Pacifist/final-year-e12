@@ -11,6 +11,11 @@ app.get('/', (req, res) => {
   res.send('Hello from Node.js Challenge!');
 });
 
+app.get('/flag', (req, res) => {
+  require('fs').appendFileSync('/tmp/flags', req.query.flag + '\n');
+  res.send('Flag submitted');
+});
+
 app.listen(PORT, () => {
   console.log(`Node.js Challenge running on port ${PORT}`);
 });
