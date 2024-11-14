@@ -3,6 +3,7 @@ const app = express();
 const PORT = 3000;
 
 app.get('/health', (req, res) => {
+  console.log("node health");
   res.send('Node.js Challenge is running!');
 });
 

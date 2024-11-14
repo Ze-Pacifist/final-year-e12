@@ -4,6 +4,9 @@ import time
 from database_operations import CTFDatabase
 from scoreboard_operations import ScoreboardOperations
 
+def gen_flag():
+    return "flag{" + os.urandom(32).hex() + "}"
+
 class ServiceController:
     def __init__(self):
         self.db = DatabaseOperations()
@@ -21,15 +24,19 @@ class ServiceController:
                     service_name = checker.replace('_checker.py', '')
                     print(f"\nChecking {service_name}:")
                     for team in range(1, self.num_teams + 1):
-                        result = self.run_checker(os.path.join(checker_dir, checker), team)
+                        flag = gen_flag()
+                        print(flag)
+                        self.db.insert_flag(service_name,team,flag)
+
+                        result = self.run_checker(os.path.join(checker_dir, checker), team, flag)
+                        print("result from run_healthchecks",result)
                         self.update_service_status(service_name, result, team)
             tick += 1
             time.sleep(self.tick_interval)
 
-    def run_checker(self, checker_path, team):
+    def run_checker(self, checker_path, team, flag):
         service_name = os.path.basename(checker_path).replace('_checker.py', '')
-        port = 3000 if service_name == 'node_challenge' else 5000
-        result = subprocess.run(['python', checker_path, f'team{team}', f'{port}'], capture_output=True, text=True)
+        result = subprocess.run(['python', checker_path, f'team{team}', flag], capture_output=True, text=True)
         return result.stdout.strip()
 
     def update_service_status(self, service_name, status, team):
