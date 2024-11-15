@@ -1,7 +1,7 @@
 import os
 import subprocess
 import time
-from database_operations import CTFDatabase
+from database_operations import DatabaseOperations
 from scoreboard_operations import ScoreboardOperations
 
 def gen_flag():
