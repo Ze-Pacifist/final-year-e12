@@ -15,7 +15,8 @@ def plant_flag(team,flag):
     try:
         response=requests.get(f"http://{team}:3000/flag?flag={flag}", timeout=5)
     except Exception as e:
-        print("Error planting flag")
+        pass
+        # print("Error planting flag")
 
 if __name__ == "__main__":
     if len(sys.argv) > 2:
