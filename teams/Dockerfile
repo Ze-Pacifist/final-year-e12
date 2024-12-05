@@ -8,7 +8,14 @@ RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
     nodejs \
-    npm
+    npm \
+    openssh-server
+
+RUN mkdir /var/run/sshd && \
+echo 'root:root' | chpasswd && \
+sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
 WORKDIR /challenges
 COPY challenges/ /challenges/
 RUN cd /challenges/node_challenge && npm install
