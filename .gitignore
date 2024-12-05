@@ -28,3 +28,6 @@ vpn/config
 # Auto generated files
 run.sh
 docker-compose.yml
+
+# Database
+*/database

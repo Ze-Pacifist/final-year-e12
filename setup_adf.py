@@ -1,6 +1,80 @@
 #!/usr/bin/env python
 import subprocess
 import time
+import sqlite3
+import random
+import string
+import os
+
+passwords = []
+CPU_RESERVE = 1
+MEM_RESERVE = 1024
+
+def initialize_database(teams: list, services: list):
+    try:
+        subprocess.check_call(["rm", "-rf", "db_manager/database"])
+        subprocess.check_call(["mkdir", "db_manager/database"])
+    except:
+        print("Unable to reset database files")
+        exit(1)
+
+    conn = sqlite3.connect("db_manager/database/ctf.db")
+    c = conn.cursor()
+    
+    # Teams table
+    c.execute('''CREATE TABLE IF NOT EXISTS teams
+                        (id INTEGER PRIMARY KEY,
+                         name TEXT UNIQUE NOT NULL,
+                         score INTEGER DEFAULT 0)''')
+
+    # Services table
+    c.execute('''CREATE TABLE IF NOT EXISTS services
+                (id INTEGER PRIMARY KEY,
+                  name TEXT UNIQUE NOT NULL,
+                  port INTEGER NOT NULL,
+                  timeout INTEGER NOT NULL)''')
+
+    # Current service status
+    c.execute('''CREATE TABLE IF NOT EXISTS current_status
+                (team_id INTEGER NOT NULL,
+                  service_name TEXT NOT NULL,
+                  status TEXT NOT NULL,
+                  last_updated DATETIME NOT NULL,
+                  PRIMARY KEY (team_id, service_name),
+                  FOREIGN KEY (team_id) REFERENCES teams(id),
+                  FOREIGN KEY (service_name) REFERENCES services(name))''')
+
+    # Rounds table - for flag generation cycles - needs to be reconsidered
+    c.execute('''CREATE TABLE IF NOT EXISTS rounds
+                (id INTEGER PRIMARY KEY,
+                  start_time DATETIME NOT NULL,
+                  round_number INTEGER NOT NULL,
+                  finished BOOLEAN NOT NULL DEFAULT 0)''')
+
+    # Current flags table
+    c.execute('''CREATE TABLE IF NOT EXISTS current_flags
+                (flag TEXT PRIMARY KEY,
+                  round_id INTEGER NOT NULL,
+                  team_id INTEGER NOT NULL,
+                  service_name TEXT NOT NULL,
+                  timestamp DATETIME NOT NULL,
+                  FOREIGN KEY (round_id) REFERENCES rounds(id),
+                  FOREIGN KEY (team_id) REFERENCES teams(id),
+                  FOREIGN KEY (service_name) REFERENCES services(name))''')
+
+    for team in teams:
+        c.execute('''INSERT INTO teams (name) VALUES ('%s')''' % team)
+
+    for service in services:
+        c.execute('''INSERT INTO services (name, port, timeout) VALUES ('%s', %s, %s)''' % (service[0], service[1], service[2]))
+
+    for i in range(1, len(teams)+1):
+        for service in services:
+            c.execute('''INSERT INTO current_status (team_id, service_name, status, last_updated) VALUES (%s, '%s', 'up', datetime('now'))''' % (i, service[0]))
+
+    conn.commit()
+    conn.close()
+
 
 def generate_vpn_service(peer_count: int, vpn_subnet: str, team_subnet: str):
     return """  vpn:
@@ -57,25 +131,32 @@ def generate_controller_service(team_count: int):
     networks:
       - admin_network
     volumes:
+      - ./db_manager/database:/app/database
       - ./vpn/config/peer1/peer1.conf:/etc/wireguard/admin.conf
     ports:
-      - "8080:8080"
+      - "8080:9090"
     restart: unless-stopped\n\n""" % team_count
 
 
-def generate_team_services(team_count: int):
-
+def generate_team_services(team_count: int, cpu: float, memory: int):
     for i in range(1,team_count+1):
-        yield """  team1:
+        passwords.append(''.join(random.choices(string.ascii_letters + string.digits, k=12)))
+        yield """  team%s:
     build:
       context: ./teams
       dockerfile: Dockerfile
-    container_name: team1
+    container_name: team%s
     networks:
       - team%s_network
     environment:
       TEAM_ID: %s
-    restart: unless-stopped\n\n""" % (i, i)
+      ROOT_PASSWORD: %s
+    restart: unless-stopped
+    deploy:
+      resources:
+          limits:
+            cpus: '%s'
+            memory: %sM\n\n""" % (i, i, i, i, passwords[-1], cpu, memory)
 
 
 def generate_networks(team_count: int, team_subnet: str):
@@ -100,13 +181,17 @@ def generate_networks(team_count: int, team_subnet: str):
 def generate_services(team_count: int, vpn_subnet: str, team_subnet: str):
 
     composef = open("docker-compose.yml", "w")
+    composef.write("version: '3'\n\n")
     composef.write("services:\n")
+
+    num_cpus = os.cpu_count() - CPU_RESERVE
+    total_memory = int(os.popen('free -m').readlines()[-2].split()[1]) - MEM_RESERVE
 
     composef.write(generate_vpn_service(team_count, vpn_subnet, team_subnet))
 
     composef.write(generate_controller_service(team_count))
 
-    for service in generate_team_services(team_count):
+    for service in generate_team_services(team_count, num_cpus/team_count, total_memory//team_count):
         composef.write(service)
 
     composef.write("networks:\n")
@@ -179,8 +264,18 @@ fi
 
 if __name__ == "__main__":
 
-    team_count = input("Team count (1): ")
+    service_count = input("Service count (1): ")
+    service_count = int(service_count) if service_count else 1
+    services = [ (input("\nService #%s\nEnter name: " % i), 
+                  int(input("Enter port: ")),
+                  int(input("Enter timeout: "))) for i in range(1,service_count+1) ]
+
+    team_count = input("\nTeam count (1): ")
     team_count = int(team_count) if team_count else 1
+    teams = [ input("Enter name for team #%s: " % i) for  i in range(1,team_count+1)]
+
+    initialize_database(teams, services)
+    print("[+] Initialized the database")
 
     vpn_subnet = input("VPN subnet (10.13.13.0/24): ")
     vpn_subnet = vpn_subnet if vpn_subnet else "10.13.13.0/24"
@@ -201,8 +296,18 @@ if __name__ == "__main__":
         subprocess.check_call("docker-compose down vpn", shell=True)
     except:
         print("Unable to generate vpn configs")
+        exit(1)
 
     print("[+] Generated vpn configs")
+
+    try:
+        for i in range(2, len(passwords)+2):
+            subprocess.check_call("echo '%s' > vpn/config/peer%s/password.txt" % (passwords[i-2], i), shell=True)
+    except:
+        print("Unable to generate password files")
+        exit(1)
+
+    print("[+] Generated password text files")
 
 
 

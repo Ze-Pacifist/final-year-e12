@@ -25,6 +25,7 @@ class DatabaseOperations:
             conn.close()
 
     def init_db(self):
+        return
         with self.get_db() as conn:
             c = conn.cursor()
 
