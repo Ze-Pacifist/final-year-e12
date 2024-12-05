@@ -61,6 +61,7 @@ services:
       - team1_network
     environment:
       TEAM_ID: 1
+      ROOT_PASSWORD: testpassword
     restart: unless-stopped
 
 networks:
