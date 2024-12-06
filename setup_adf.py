@@ -5,6 +5,7 @@ import sqlite3
 import random
 import string
 import os
+import psutil
 
 passwords = []
 CPU_RESERVE = 1
@@ -185,7 +186,7 @@ def generate_services(team_count: int, vpn_subnet: str, team_subnet: str):
     composef.write("services:\n")
 
     num_cpus = os.cpu_count() - CPU_RESERVE
-    total_memory = int(os.popen('free -m').readlines()[-2].split()[1]) - MEM_RESERVE
+    total_memory = psutil.virtual_memory().total // 10**6
 
     composef.write(generate_vpn_service(team_count, vpn_subnet, team_subnet))
 
