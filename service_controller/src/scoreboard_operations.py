@@ -20,13 +20,6 @@ class ScoreboardOperations:
         app.scoreboard = self
         app.run(host='0.0.0.0', port=9090)
 
-    def update_scoreboard(self, service_name, status, team):
-        if status.upper() == "UP":
-            with self.db.get_db() as conn:
-                c = conn.cursor()
-                c.execute('''UPDATE teams SET score = score + 1 WHERE id = ?''', (team,))
-                conn.commit()
-                print(f"Added 1 point to Team {team} for {service_name} being UP")
 
     def set_tick(self, tick):
         with self.flag_lock:

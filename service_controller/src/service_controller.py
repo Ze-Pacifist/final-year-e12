@@ -58,7 +58,7 @@ class ServiceController:
     def update_service_status(self, service_name, status, team):
         print(f"  Team {team}: {status}")
         self.db.update_service_status(service_name, status, team)
-        self.scoreboard.update_scoreboard(service_name, status, team)
+        self.update_service_status(service_name, status, team)
 
 if __name__ == '__main__':
     controller = ServiceController()

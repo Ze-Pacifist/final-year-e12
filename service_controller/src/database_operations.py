@@ -83,6 +83,14 @@ class DatabaseOperations:
             c.execute('''UPDATE current_status SET status = ?, last_updated = ? WHERE team_id = ? AND service_name = ?''', (status, datetime.now(), team, service_name))
             conn.commit()
 
+    def update_service_score(self, service_name, status, team):
+        if status.upper() == "UP":
+            with self.get_db() as conn:
+                c = conn.cursor()
+                c.execute('''UPDATE teams SET score = score + 1 WHERE id = ?''', (team,))
+                conn.commit()
+                print(f"Added 1 point to Team {team} for {service_name} being UP")
+
     def insert_flag(self, service_name,tick, team, flag):
         with self.get_db() as conn:
             c = conn.cursor()
