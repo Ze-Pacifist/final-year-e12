@@ -21,6 +21,7 @@ class ServiceController:
         while True:
             print(f"\n--- Tick {tick} ---")
             self.scoreboard.set_tick(tick)  # Update tick in scoreboard
+            start = time.time()
             for checker in os.listdir(checker_dir):
                 if not checker.endswith('_checker.py'):
                     print("Checker script naming scheme error")
@@ -36,7 +37,9 @@ class ServiceController:
                     threads.append(thread)
                     thread.start()
                 for thread in threads:
-                    thread.join()     
+                    thread.join()
+            end = time.time()
+            print(f"\n\n\n[*] Tick #{tick} took {end-start}s for healthcheck\n\n\n", flush=True)
             tick += 1
             time.sleep(self.tick_interval)
 

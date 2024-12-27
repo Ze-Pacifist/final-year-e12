@@ -9,7 +9,7 @@ import psutil
 
 passwords = []
 CPU_RESERVE = 1
-MEM_RESERVE = 1024
+MEM_RESERVE = 2048
 
 def initialize_database(teams: list, services: list):
     try:
@@ -186,7 +186,7 @@ def generate_services(team_count: int, vpn_subnet: str, team_subnet: str):
     composef.write("services:\n")
 
     num_cpus = os.cpu_count() - CPU_RESERVE
-    total_memory = psutil.virtual_memory().total // 10**6
+    total_memory = (psutil.virtual_memory().total // 10**6) - MEM_RESERVE
 
     composef.write(generate_vpn_service(team_count, vpn_subnet, team_subnet))
 
