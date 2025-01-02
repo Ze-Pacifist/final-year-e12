@@ -13,13 +13,13 @@ MEM_RESERVE = 2048
 
 def initialize_database(teams: list, services: list):
     try:
-        subprocess.check_call(["rm", "-rf", "db_manager/database"])
-        subprocess.check_call(["mkdir", "db_manager/database"])
+        subprocess.check_call(["rm", "-rf", "database"])
+        subprocess.check_call(["mkdir", "database"])
     except:
         print("Unable to reset database files")
         exit(1)
 
-    conn = sqlite3.connect("db_manager/database/ctf.db")
+    conn = sqlite3.connect("database/ctf.db")
     c = conn.cursor()
     
     # Teams table
@@ -132,7 +132,7 @@ def generate_controller_service(team_count: int):
     networks:
       - admin_network
     volumes:
-      - ./db_manager/database:/app/database
+      - ./database:/app/database
       - ./vpn/config/peer1/peer1.conf:/etc/wireguard/admin.conf
     ports:
       - "8080:9090"

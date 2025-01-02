@@ -48,7 +48,7 @@ services:
       - admin_network
     volumes:
       - ./vpn/config/peer1/peer1.conf:/etc/wireguard/admin.conf
-      - ./db_manager/database:/app/database
+      - ./database:/app/database
     ports:
       - "8080:8080"
     restart: unless-stopped
