@@ -63,6 +63,7 @@ def submit_flags():
                     
                     result = c.fetchone()
                     if result:
+                        # Ensure multiple submissions of flag from same team is not accepted
                         if flag not in app.scoreboard.submitted_flags[current_tick]:
                             app.scoreboard.submitted_flags[current_tick][flag] = set()
                         app.scoreboard.submitted_flags[current_tick][flag].add(team_id)
@@ -86,6 +87,7 @@ def submit_flags():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/scoreboard', methods=['GET'])
 def get_scoreboard():

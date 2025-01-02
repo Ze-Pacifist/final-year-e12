@@ -12,38 +12,46 @@ class ServiceController:
     def __init__(self):
         self.db = DatabaseOperations()
         self.scoreboard = ScoreboardOperations(self.db)
-        self.tick_interval = int(os.getenv('TICK_INTERVAL', 180))  # Default to 3 minutes
-        self.num_teams = int(os.getenv('NUM_TEAMS', 2))  # Default to 2 teams
+        # Default to 3 minutes
+        self.tick_interval = int(os.getenv('TICK_INTERVAL', 180))  
+        # Default to 2 teams
+        self.num_teams = int(os.getenv('NUM_TEAMS', 2))  
 
-    def run_healthchecks(self):
+    def run_healthchecks(self, services):
         checker_dir = 'checkers'
         tick = 1
         while True:
             print(f"\n--- Tick {tick} ---")
-            self.scoreboard.set_tick(tick)  # Update tick in scoreboard
+            # Update tick in scoreboard
+            self.scoreboard.set_tick(tick)  
             start = time.time()
-            for checker in os.listdir(checker_dir):
-                if not checker.endswith('_checker.py'):
-                    print("Checker script naming scheme error")
+            for service_name in services:
+                checker = f"{service_name}_checker.py"
+                checker_path = os.path.join(checker_dir, checker)
+
+                # Skip if checker doesn't exist
+                if not os.path.exists(checker_path):
+                    print(f"Warning: Checker not found for service {service_name}")
                     continue
-                service_name = checker.replace('_checker.py', '')
+
                 print(f"\nChecking {service_name}:")
                 threads = []
                 for team in range(1, self.num_teams + 1):
                     thread = threading.Thread(
                         target=self.check_team_service,
-                        args=(service_name, tick, team, os.path.join(checker_dir, checker))
+                        args=(service_name, tick, team, checker_path)
                     )
                     threads.append(thread)
                     thread.start()
                 for thread in threads:
                     thread.join()
+                    
             end = time.time()
             print(f"\n\n\n[*] Tick #{tick} took {end-start}s for healthcheck\n\n\n", flush=True)
             tick += 1
             time.sleep(self.tick_interval)
 
-# Threaded function to parallelly run healthchecks+flag plant for all teams
+    # Threaded function to parallelly run healthchecks+flag plant for all teams
     def check_team_service(self, service_name, tick, team, checker_path):
         flag = gen_flag()
         print(f"Team {team} flag: {flag}")
@@ -52,8 +60,10 @@ class ServiceController:
         print(f"Result from team {team} check:", result)
         self.update_service_status(service_name, result, team)
 
+    # Execute healthcheck script
     def run_checker(self, checker_path, team, flag):
         service_name = os.path.basename(checker_path).replace('_checker.py', '')
+        print(f"Running checker script for f{service_name}")
         result = subprocess.run(['python', checker_path, f'team{team}', flag], capture_output=True, text=True)
         return result.stdout.strip()
 
@@ -65,4 +75,5 @@ class ServiceController:
 
 if __name__ == '__main__':
     controller = ServiceController()
-    controller.run_healthchecks()
+    services = controller.db.get_services()
+    controller.run_healthchecks(services)
