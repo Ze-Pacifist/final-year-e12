@@ -71,7 +71,7 @@ def initialize_database(teams: list, services: list):
 
     for i in range(1, len(teams)+1):
         for service in services:
-            c.execute('''INSERT INTO current_status (team_id, service_name, status, last_updated) VALUES (%s, '%s', 'up', datetime('now'))''' % (i, service[0]))
+            c.execute('''INSERT INTO current_status (team_id, service_name, status, last_updated) VALUES (%s, '%s', 'UP', datetime('now'))''' % (i, service[0]))
 
     conn.commit()
     conn.close()

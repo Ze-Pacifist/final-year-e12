@@ -67,7 +67,7 @@ class ServiceController:
         result = subprocess.run(['python', checker_path, f'team{team}', flag], capture_output=True, text=True)
         return result.stdout.strip()
 
-# Update database and scoreboard with service status
+    # Update database and scoreboard with service status
     def update_service_status(self, service_name, status, team):
         print(f"  Team {team}: {status}")
         self.db.update_service_status(service_name, status, team)
