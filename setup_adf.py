@@ -6,6 +6,7 @@ import random
 import string
 import os
 import psutil
+import sys
 
 passwords = []
 CPU_RESERVE = 1
@@ -113,7 +114,7 @@ def generate_vpn_service(peer_count: int, vpn_subnet: str, team_subnet: str):
     )
 
 
-def generate_controller_service(team_count: int):
+def generate_controller_service(team_count: int, tick_interval: int):
     return """  service_controller:
     build:
       context: .
@@ -127,7 +128,7 @@ def generate_controller_service(team_count: int):
     sysctls:
       - net.ipv4.conf.all.src_valid_mark=1
     environment:
-      TICK_INTERVAL: 180
+      TICK_INTERVAL: %s
       NUM_TEAMS: %s
     networks:
       - admin_network
@@ -136,7 +137,7 @@ def generate_controller_service(team_count: int):
       - ./vpn/config/peer1/peer1.conf:/etc/wireguard/admin.conf
     ports:
       - "8080:9090"
-    restart: unless-stopped\n\n""" % team_count
+    restart: unless-stopped\n\n""" % (tick_interval, team_count)
 
 
 def generate_team_services(team_count: int, cpu: float, memory: int):
@@ -179,7 +180,7 @@ def generate_networks(team_count: int, team_subnet: str):
         - subnet: %s\n""" % (i, team_specific_subnet)
 
 
-def generate_services(team_count: int, vpn_subnet: str, team_subnet: str):
+def generate_services(team_count: int, vpn_subnet: str, team_subnet: str, tick_interval: int):
 
     composef = open("docker-compose.yml", "w")
     composef.write("version: '3'\n\n")
@@ -190,7 +191,7 @@ def generate_services(team_count: int, vpn_subnet: str, team_subnet: str):
 
     composef.write(generate_vpn_service(team_count, vpn_subnet, team_subnet))
 
-    composef.write(generate_controller_service(team_count))
+    composef.write(generate_controller_service(team_count, tick_interval))
 
     for service in generate_team_services(team_count, num_cpus/team_count, total_memory//team_count):
         composef.write(service)
@@ -263,36 +264,21 @@ fi
     shellf.write(script)
     shellf.close()
 
-if __name__ == "__main__":
 
-    service_count = input("Service count (1): ")
-    service_count = int(service_count) if service_count else 1
-    services = [ (input("\nService #%s\nEnter name: " % i), 
-                  int(input("Enter port: ")),
-                  int(input("Enter timeout: "))) for i in range(1,service_count+1) ]
-
-    team_count = input("\nTeam count (1): ")
-    team_count = int(team_count) if team_count else 1
-    teams = [ input("Enter name for team #%s: " % i) for  i in range(1,team_count+1)]
+def main(services: list, teams: list, vpn_subnet: str, team_subnet: str, tick_interval: int):
 
     initialize_database(teams, services)
     print("[+] Initialized the database")
 
-    vpn_subnet = input("VPN subnet (10.13.13.0/24): ")
-    vpn_subnet = vpn_subnet if vpn_subnet else "10.13.13.0/24"
-
-    team_subnet = input("Team subnet (172.30.0.0/16): ")
-    team_subnet = team_subnet if team_subnet else "172.30.0.0/16"
-
-    generate_services(team_count, vpn_subnet, team_subnet)
+    generate_services(len(teams), vpn_subnet, team_subnet, tick_interval)
     print("[+] Generated docker-compose.yml")
 
-    generate_shell_script(team_count, team_subnet)
+    generate_shell_script(len(teams), team_subnet)
     print("[+] Generated shell script")
 
     try:
         subprocess.check_call("rm -rf vpn/config", shell=True)
-        subprocess.check_call("docker-compose up -d vpn --remove-orphans --force-recreate", shell=True)
+        subprocess.check_call("docker-compose up --remove-orphans --force-recreate -d vpn", shell=True)
         time.sleep(5)
         subprocess.check_call("docker-compose down vpn", shell=True)
     except:
@@ -310,6 +296,41 @@ if __name__ == "__main__":
 
     print("[+] Generated password text files")
 
+
+if __name__ == "__main__":
+
+    if len(sys.argv) == 1:
+      service_count = input("Service count (1): ")
+      service_count = int(service_count) if service_count else 1
+      services = [ (input("\nService #%s\nEnter name: " % i), 
+                    int(input("Enter port: ")),
+                    int(input("Enter timeout: "))) for i in range(1,service_count+1) ]
+
+      team_count = input("\nTeam count (1): ")
+      team_count = int(team_count) if team_count else 1
+      teams = [ input("Enter name for team #%s: " % i) for  i in range(1,team_count+1)]
+
+      vpn_subnet = input("VPN subnet (10.13.13.0/24): ")
+      vpn_subnet = vpn_subnet if vpn_subnet else "10.13.13.0/24"
+
+      team_subnet = input("Team subnet (172.30.0.0/16): ")
+      team_subnet = team_subnet if team_subnet else "172.30.0.0/16"
+
+      tick_interval = input("Tick interval (180): ")
+      tick_interval = tick_interval if tick_interval else 180
+
+      main(services, teams, vpn_subnet, team_subnet, tick_interval)
+
+    elif len(sys.argv) == 2:
+      import json
+
+      config_file = open(sys.argv[1], "r")
+      config = json.load(config_file)
+
+      main(config["services"], config["teams"], config["vpn_subnet"], config["team_subnet"], config["tick_interval"])
+
+    else:
+      print(f"[-] Usage: python {sys.argv[0]} Optional[Configuration file path]")
 
 
     

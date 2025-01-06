@@ -30,4 +30,4 @@ run.sh
 docker-compose.yml
 
 # Database
-*/database
+database

@@ -1,0 +1,16 @@
+{
+    "services": [
+        ["python_challenge", "5000", "10"],
+        ["node_challenge", "3000", "10"]
+    ],
+
+    "teams": [
+        "team1",
+        "team2",
+        "team3"
+    ],
+
+    "vpn_subnet": "10.13.13.0/24",
+    "team_subnet": "172.30.0.0/16",
+    "tick_interval": 60
+}
