@@ -1,9 +1,12 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import threading
 from database_operations import DatabaseOperations
 from contextlib import contextmanager
+import os
 
-app = Flask(__name__)
+app = Flask(__name__, 
+    template_folder=os.path.join(os.path.dirname(__file__), 'templates'),
+    static_folder=os.path.join(os.path.dirname(__file__), 'static'))
 
 class ScoreboardOperations:
     def __init__(self,db):
@@ -137,6 +140,10 @@ def get_scoreboard():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/')
+def index():
+    return render_template('scoreboard.html')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=9090)

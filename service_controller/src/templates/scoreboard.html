@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attack Defense CTF - Live Scoreboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Attack Defense CTF</h1>
+            <p class="subtitle">Live Scoreboard</p>
+            <div class="tick-counter">
+                Round <span id="current-tick" class="tick-number">0</span>
+            </div>
+            <div id="error-message" class="error-message hidden">
+                <i data-lucide="alert-triangle"></i>
+                <span></span>
+            </div>
+        </div>
+
+        <div class="scoreboard">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Team</th>
+                        <th>Services</th>
+                        <th>Score</th>
+                    </tr>
+                </thead>
+                <tbody id="scoreboard-body">
+                    <!-- Dynamically populated -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <p>Last updated: <span id="last-updated">Never</span></p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='scoreboard.js') }}"></script>
+</body>
+</html> 

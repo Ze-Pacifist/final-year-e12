@@ -15,6 +15,7 @@ class DatabaseOperations:
         conn.row_factory = sqlite3.Row
         try:
             conn.execute('PRAGMA journal_mode=WAL')
+            conn.execute('PRAGMA synchronous=NORMAL')
             # 60 second timeout
             conn.execute('PRAGMA busy_timeout=60000')  
             yield conn
@@ -54,11 +55,21 @@ class DatabaseOperations:
     # Update SLA score if service is UP
     def update_service_score(self, service_name, status, team):
         if status.upper() == "UP":
-            with self.get_db() as conn:
-                c = conn.cursor()
-                c.execute('''UPDATE teams SET score = score + 1 WHERE id = ?''', (team,))
-                conn.commit()
-                print(f"Added 1 point to Team {team} for {service_name} being UP")
+            retries=3
+            for attempt in range(retries):
+                try:
+                    with self.get_db() as conn:
+                        c = conn.cursor()
+                        c.execute('''UPDATE teams SET score = score + 1 WHERE id = ?''', (team,))
+                        conn.commit()
+                        print(f"Added 1 point to Team {team} for {service_name} being UP")
+                    return
+                except sqlite3.OperationalError as e:
+                    if "disk I/O error" in str(e):
+                        print(f"Retrying ({attempt+1}/{retries})")
+                        time.sleep(1)
+                    else:
+                        raise e
 
     # Insert generated flags into database
     def insert_flag(self, service_name,tick, team, flag):
