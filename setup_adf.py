@@ -27,7 +27,9 @@ def initialize_database(teams: list, services: list):
     c.execute('''CREATE TABLE IF NOT EXISTS teams
                         (id INTEGER PRIMARY KEY,
                          name TEXT UNIQUE NOT NULL,
-                         score INTEGER DEFAULT 0)''')
+                         score INTEGER DEFAULT 0,
+                         sla_points INTEGER DEFAULT 0, 
+                         attack_points INTEGER DEFAULT 0)''')
 
     # Services table
     c.execute('''CREATE TABLE IF NOT EXISTS services

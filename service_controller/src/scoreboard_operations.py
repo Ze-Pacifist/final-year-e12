@@ -70,15 +70,11 @@ def submit_flags():
                         if flag not in app.scoreboard.submitted_flags[current_tick]:
                             app.scoreboard.submitted_flags[current_tick][flag] = set()
                         app.scoreboard.submitted_flags[current_tick][flag].add(team_id)
-                        
                         valid_flags += 1
-                        # Update the submitting team's score
-                        c.execute('''
-                            UPDATE teams 
-                            SET score = score + 1 
-                            WHERE id = ?
-                        ''', (team_id,))
             
+            # Add attack points instead of directly updating score
+            if valid_flags > 0:
+                app.scoreboard.db.add_attack_points(team_id, valid_flags)
             conn.commit()
 
         return jsonify({

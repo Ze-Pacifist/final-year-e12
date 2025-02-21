@@ -48,6 +48,8 @@ class ServiceController:
                     
             end = time.time()
             print(f"\n\n\n[*] Tick #{tick} took {end-start}s for healthcheck\n\n\n", flush=True)
+
+            self.db.calculate_round_score(tick)
             tick += 1
             time.sleep(self.tick_interval)
 
@@ -71,7 +73,7 @@ class ServiceController:
     def update_service_status(self, service_name, status, team):
         print(f"  Team {team}: {status}")
         self.db.update_service_status(service_name, status, team)
-        self.db.update_service_score(service_name, status, team)
+        self.db.update_service_score(service_name, status, team, self.scoreboard.current_tick)
 
 if __name__ == '__main__':
     controller = ServiceController()
